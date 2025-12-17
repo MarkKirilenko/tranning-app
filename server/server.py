@@ -3,9 +3,9 @@ import socket
 import threading
 import json
 from models import DatabaseManager
-import routes
+import routes as routes
 
-HOST = '127.0.0.1'
+HOST = '0.0.0.0'
 PORT = 65432
 
 class LoggerObserver:
