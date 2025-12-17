@@ -38,26 +38,24 @@ class BaseFrame(ctk.CTkFrame):
         right_frame.pack(side="right", padx=10)
 
         # Кнопка переключения языка
-        lang_btn = ctk.CTkButton(right_frame, 
-                                text=self.controller.loc.get("lang_btn"), 
-                                width=50,
-                                font=BODY_FONT,
-                                fg_color="transparent", 
-                                text_color=TEXT_BODY_COLOR, 
-                                hover_color=CARD_BG_COLOR,
-                                command=self.controller.toggle_language)
-        lang_btn.pack(side="left", padx=5)
+        self.lang_btn = ctk.CTkButton(right_frame, 
+                                     width=50,
+                                     font=BODY_FONT,
+                                     fg_color="transparent", 
+                                     text_color=TEXT_BODY_COLOR, 
+                                     hover_color=CARD_BG_COLOR,
+                                     command=self.controller.toggle_language)
+        self.lang_btn.pack(side="left", padx=5)
 
         # Кнопка История тренировок
         if isinstance(self, (ExerciseFrame, ProgressFrame, NutritionPlanFrame, WorkoutHistoryFrame)):
-            history_btn = ctk.CTkButton(right_frame, 
-                                       text=self.controller.loc.get("workout_history"), 
-                                       font=BODY_FONT,
-                                       fg_color="transparent", 
-                                       text_color=TEXT_BODY_COLOR, 
-                                       hover_color=CARD_BG_COLOR,
-                                       command=self.controller.open_workout_history)
-            history_btn.pack(side="left", padx=5)
+            self.history_btn = ctk.CTkButton(right_frame, 
+                                            font=BODY_FONT,
+                                            fg_color="transparent", 
+                                            text_color=TEXT_BODY_COLOR, 
+                                            hover_color=CARD_BG_COLOR,
+                                            command=self.controller.open_workout_history)
+            self.history_btn.pack(side="left", padx=5)
 
         # Настройки
         settings_btn = ctk.CTkButton(right_frame, text="⚙️", width=40, font=BODY_FONT,
@@ -68,15 +66,24 @@ class BaseFrame(ctk.CTkFrame):
         settings_btn.pack(side="left", padx=5)
         
         # Выход
-        logout_btn = ctk.CTkButton(right_frame, 
-                                  text=self.controller.loc.get("logout"), 
-                                  width=60, 
-                                  font=BODY_FONT,
-                                  fg_color=HIGHLIGHT_COLOR, 
-                                  hover_color="#E08500", 
-                                  text_color=TEXT_HEADER_COLOR,
-                                  command=self.controller.on_logout)
-        logout_btn.pack(side="left", padx=5)
+        self.logout_btn = ctk.CTkButton(right_frame, 
+                                       width=60, 
+                                       font=BODY_FONT,
+                                       fg_color=HIGHLIGHT_COLOR, 
+                                       hover_color="#E08500", 
+                                       text_color=TEXT_HEADER_COLOR,
+                                       command=self.controller.on_logout)
+        self.logout_btn.pack(side="left", padx=5)
+        
+        # Обновляем тексты кнопок
+        self.update_texts()
+
+    def update_texts(self):
+        """Обновляет тексты в навигационной панели."""
+        self.lang_btn.configure(text=self.controller.loc.get("lang_btn"))
+        if hasattr(self, 'history_btn'):
+            self.history_btn.configure(text=self.controller.loc.get("workout_history"))
+        self.logout_btn.configure(text=self.controller.loc.get("logout"))
 
 # ==========================================
 # НОВЫЕ ФРЕЙМЫ ДЛЯ ПОШАГОВОГО МАСТЕРА (WIZARD)
@@ -86,19 +93,32 @@ class LandingFrame(BaseFrame):
     """Главный экран-лендинг после входа."""
     def __init__(self, master, controller, **kwargs):
         super().__init__(master, controller, **kwargs)
+        self.welcome_label = None
+        self.create_workout_label = None
+        self.personalized_plan_label = None
+        self.start_btn = None
+        self.nutrition_btn = None
+        self.existing_btn = None
+        self.history_btn = None
         
+        self._create_widgets()
+    
+    def _create_widgets(self):
         # Центральный контент
         content_frame = ctk.CTkFrame(self, fg_color="transparent")
         content_frame.pack(expand=True, fill="both", padx=40, pady=40)
 
         welcome_text = self.controller.loc.get("welcome_user", username=self.controller.username)
-        ctk.CTkLabel(content_frame, text=welcome_text, font=SUBHEADER_FONT, text_color=ACCENT_COLOR).pack(pady=(0, 10), anchor="w")
+        self.welcome_label = ctk.CTkLabel(content_frame, text=welcome_text, font=SUBHEADER_FONT, text_color=ACCENT_COLOR)
+        self.welcome_label.pack(pady=(0, 10), anchor="w")
 
-        ctk.CTkLabel(content_frame, text=self.controller.loc.get("create_workout"), 
-                     font=HEADER_FONT, text_color=TEXT_HEADER_COLOR, justify="left").pack(pady=(0, 20), anchor="w")
+        self.create_workout_label = ctk.CTkLabel(content_frame, text=self.controller.loc.get("create_workout"), 
+                                                font=HEADER_FONT, text_color=TEXT_HEADER_COLOR, justify="left")
+        self.create_workout_label.pack(pady=(0, 20), anchor="w")
         
-        ctk.CTkLabel(content_frame, text=self.controller.loc.get("personalized_plan"), 
-                     font=SUBHEADER_FONT, text_color=TEXT_BODY_COLOR, justify="left").pack(pady=(0, 40), anchor="w")
+        self.personalized_plan_label = ctk.CTkLabel(content_frame, text=self.controller.loc.get("personalized_plan"), 
+                                                   font=SUBHEADER_FONT, text_color=TEXT_BODY_COLOR, justify="left")
+        self.personalized_plan_label.pack(pady=(0, 40), anchor="w")
 
         # Фрейм для кнопок
         buttons_frame = ctk.CTkFrame(content_frame, fg_color="transparent")
@@ -109,39 +129,50 @@ class LandingFrame(BaseFrame):
         top_buttons_frame.pack(fill="x", pady=(0, 10))
 
         # Кнопка "Начать создание плана" (занимает всю ширину)
-        start_btn = ctk.CTkButton(top_buttons_frame, text=self.controller.loc.get("start"), 
-                                  font=BUTTON_FONT, height=50, corner_radius=25,
-                                  fg_color=ACCENT_COLOR, hover_color="#0069D9",
-                                  command=self.controller.start_wizard)
-        start_btn.pack(fill="x", ipadx=20)
+        self.start_btn = ctk.CTkButton(top_buttons_frame, 
+                                      font=BUTTON_FONT, height=50, corner_radius=25,
+                                      fg_color=ACCENT_COLOR, hover_color="#0069D9",
+                                      command=self.controller.start_wizard)
+        self.start_btn.pack(fill="x", ipadx=20)
 
         # Вторая строка кнопок
         bottom_buttons_frame = ctk.CTkFrame(buttons_frame, fg_color="transparent")
         bottom_buttons_frame.pack(fill="x")
 
         # Кнопка "Создать план питания" (слева)
-        nutrition_btn = ctk.CTkButton(bottom_buttons_frame, 
-                                     text="🍎 СОЗДАТЬ ПЛАН ПИТАНИЯ",
-                                     font=("Helvetica Neue", 14, "bold"), height=45, corner_radius=20,
-                                     fg_color=HIGHLIGHT_COLOR, hover_color="#E08500",
-                                     command=self.controller.on_create_nutrition_plan)
-        nutrition_btn.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        self.nutrition_btn = ctk.CTkButton(bottom_buttons_frame, 
+                                          font=("Helvetica Neue", 14, "bold"), height=45, corner_radius=20,
+                                          fg_color=HIGHLIGHT_COLOR, hover_color="#E08500",
+                                          command=self.controller.on_create_nutrition_plan)
+        self.nutrition_btn.pack(side="left", fill="x", expand=True, padx=(0, 5))
 
         # Кнопка "Существующие планы" (справа)
-        existing_btn = ctk.CTkButton(bottom_buttons_frame, 
-                                    text="📁 СУЩЕСТВУЮЩИЕ ПЛАНЫ",
-                                    font=("Helvetica Neue", 14, "bold"), height=45, corner_radius=20,
-                                    fg_color="#30D158", hover_color="#20B148",
-                                    command=self.controller.on_use_existing_workout_plan)
-        existing_btn.pack(side="right", fill="x", expand=True, padx=(5, 0))
+        self.existing_btn = ctk.CTkButton(bottom_buttons_frame, 
+                                         font=("Helvetica Neue", 14, "bold"), height=45, corner_radius=20,
+                                         fg_color="#30D158", hover_color="#20B148",
+                                         command=self.controller.on_use_existing_workout_plan)
+        self.existing_btn.pack(side="right", fill="x", expand=True, padx=(5, 0))
         
         # Кнопка "История тренировок" (третья строка)
-        history_btn = ctk.CTkButton(buttons_frame,
-                                   text="📊 ИСТОРИЯ ТРЕНИРОВОК",
-                                   font=("Helvetica Neue", 14, "bold"), height=45, corner_radius=20,
-                                   fg_color="#AF52DE", hover_color="#8E44D9",
-                                   command=self.controller.open_workout_history)
-        history_btn.pack(fill="x", pady=(10, 0))
+        self.history_btn = ctk.CTkButton(buttons_frame,
+                                        font=("Helvetica Neue", 14, "bold"), height=45, corner_radius=20,
+                                        fg_color="#AF52DE", hover_color="#8E44D9",
+                                        command=self.controller.open_workout_history)
+        self.history_btn.pack(fill="x", pady=(10, 0))
+        
+        self.update_texts()
+    
+    def update_texts(self):
+        """Обновляет тексты на фрейме."""
+        super().update_texts()
+        welcome_text = self.controller.loc.get("welcome_user", username=self.controller.username)
+        self.welcome_label.configure(text=welcome_text)
+        self.create_workout_label.configure(text=self.controller.loc.get("create_workout"))
+        self.personalized_plan_label.configure(text=self.controller.loc.get("personalized_plan"))
+        self.start_btn.configure(text=self.controller.loc.get("start"))
+        self.nutrition_btn.configure(text="🍎 " + self.controller.loc.get("create_nutrition_plan"))
+        self.existing_btn.configure(text="📁 " + self.controller.loc.get("existing_plans"))
+        self.history_btn.configure(text="📊 " + self.controller.loc.get("workout_history"))
 
 class StepFrameBase(BaseFrame):
     """Базовый класс для шагов мастера, добавляет заголовок и кнопку 'Назад'."""
@@ -149,18 +180,30 @@ class StepFrameBase(BaseFrame):
         super().__init__(master, controller, **kwargs)
         self.step_id = step_id
         self.title_key = title_key
+        self.back_btn = None
+        self.title_label = None
         
+        self._create_header()
+        self._create_content()
+
+    def _create_header(self):
         header_frame = ctk.CTkFrame(self, fg_color="transparent")
         header_frame.pack(fill="x", padx=40, pady=(30, 20))
         
         # Кнопка Назад
-        back_btn = ctk.CTkButton(header_frame, text=self.controller.loc.get("back"), font=BODY_FONT, width=80,
-                                 fg_color="transparent", text_color=TEXT_BODY_COLOR, hover_color=CARD_BG_COLOR,
-                                 command=self.on_back)
-        back_btn.pack(side="left", anchor="w")
+        self.back_btn = ctk.CTkButton(header_frame, font=BODY_FONT, width=80,
+                                     fg_color="transparent", text_color=TEXT_BODY_COLOR, hover_color=CARD_BG_COLOR,
+                                     command=self.on_back)
+        self.back_btn.pack(side="left", anchor="w")
 
         # Заголовок шага
-        ctk.CTkLabel(self, text=self.controller.loc.get(title_key), font=HEADER_FONT, text_color=TEXT_HEADER_COLOR).pack(pady=(0, 30))
+        self.title_label = ctk.CTkLabel(self, font=HEADER_FONT, text_color=TEXT_HEADER_COLOR)
+        self.title_label.pack(pady=(0, 30))
+        
+        self.update_texts()
+
+    def _create_content(self):
+        pass  # Должен быть переопределен в дочерних классах
 
     def on_back(self):
         """Обработчик кнопки назад."""
@@ -182,61 +225,79 @@ class StepFrameBase(BaseFrame):
                             corner_radius=15, height=150, width=150,
                             command=command)
         return btn
+    
+    def update_texts(self):
+        """Обновляет тексты на фрейме."""
+        super().update_texts()
+        self.back_btn.configure(text=self.controller.loc.get("back"))
+        self.title_label.configure(text=self.controller.loc.get(self.title_key))
 
 class StepPlaceFrame(StepFrameBase):
     """Шаг 1: Где тренируемся?"""
     def __init__(self, master, controller, **kwargs):
         super().__init__(master, controller, "workout_location", "step1", **kwargs)
         
+    def _create_content(self):
         options_frame = ctk.CTkFrame(self, fg_color="transparent")
         options_frame.pack(expand=True)
 
         self.create_option_button(options_frame, "home", "🏠", 
-                                  lambda: self.controller.set_wizard_condition("Дом")).pack(side="left", padx=20)
+                                 lambda: self.controller.set_wizard_condition("Дом")).pack(side="left", padx=20)
         
         self.create_option_button(options_frame, "gym", "🏋️‍♀️", 
-                                  lambda: self.controller.set_wizard_condition("Зал")).pack(side="left", padx=20)
+                                 lambda: self.controller.set_wizard_condition("Зал")).pack(side="left", padx=20)
 
 class StepGoalFrame(StepFrameBase):
     """Шаг 2: Какая цель?"""
     def __init__(self, master, controller, **kwargs):
         super().__init__(master, controller, "workout_goal", "step2", **kwargs)
         
+    def _create_content(self):
         options_frame = ctk.CTkFrame(self, fg_color="transparent")
         options_frame.pack(expand=True, fill="x", padx=40)
         options_frame.grid_columnconfigure((0, 1, 2), weight=1)
 
         self.create_option_button(options_frame, "weight_loss", "🔥", 
-                                  lambda: self.controller.set_wizard_goal("Похудение")).grid(row=0, column=0, padx=10, sticky="ew")
+                                 lambda: self.controller.set_wizard_goal("Похудение")).grid(row=0, column=0, padx=10, sticky="ew")
         
         self.create_option_button(options_frame, "muscle_gain", "💪", 
-                                  lambda: self.controller.set_wizard_goal("Набор мышц")).grid(row=0, column=1, padx=10, sticky="ew")
+                                 lambda: self.controller.set_wizard_goal("Набор мышц")).grid(row=0, column=1, padx=10, sticky="ew")
 
         self.create_option_button(options_frame, "endurance", "🏃‍♂️", 
-                                  lambda: self.controller.set_wizard_goal("Выносливость")).grid(row=0, column=2, padx=10, sticky="ew")
+                                 lambda: self.controller.set_wizard_goal("Выносливость")).grid(row=0, column=2, padx=10, sticky="ew")
 
 class StepLevelFrame(StepFrameBase):
     """Шаг 3: Какой уровень?"""
     def __init__(self, master, controller, **kwargs):
         super().__init__(master, controller, "workout_level", "step3", **kwargs)
         
+    def _create_content(self):
         options_frame = ctk.CTkFrame(self, fg_color="transparent")
         options_frame.pack(expand=True, fill="x", padx=40)
 
-        btn_novice = ctk.CTkButton(options_frame, text=f"🟢 {self.controller.loc.get('beginner')}", font=BUTTON_FONT, height=60,
-                                   fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
-                                   command=lambda: self.controller.set_wizard_level("Новичок"))
-        btn_novice.pack(fill="x", pady=10)
+        self.btn_novice = ctk.CTkButton(options_frame, font=BUTTON_FONT, height=60,
+                                       fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
+                                       command=lambda: self.controller.set_wizard_level("Новичок"))
+        self.btn_novice.pack(fill="x", pady=10)
 
-        btn_inter = ctk.CTkButton(options_frame, text=f"🟡 {self.controller.loc.get('intermediate')}", font=BUTTON_FONT, height=60,
-                                   fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
-                                   command=lambda: self.controller.set_wizard_level("Средний"))
-        btn_inter.pack(fill="x", pady=10)
+        self.btn_inter = ctk.CTkButton(options_frame, font=BUTTON_FONT, height=60,
+                                       fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
+                                       command=lambda: self.controller.set_wizard_level("Средний"))
+        self.btn_inter.pack(fill="x", pady=10)
 
-        btn_adv = ctk.CTkButton(options_frame, text=f"🔴 {self.controller.loc.get('advanced')}", font=BUTTON_FONT, height=60,
-                                   fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
-                                   command=lambda: self.controller.set_wizard_level("Продвинутый"))
-        btn_adv.pack(fill="x", pady=10)
+        self.btn_adv = ctk.CTkButton(options_frame, font=BUTTON_FONT, height=60,
+                                     fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
+                                     command=lambda: self.controller.set_wizard_level("Продвинутый"))
+        self.btn_adv.pack(fill="x", pady=10)
+        
+        self.update_texts()
+    
+    def update_texts(self):
+        """Обновляет тексты на фрейме."""
+        super().update_texts()
+        self.btn_novice.configure(text=f"🟢 {self.controller.loc.get('beginner')}")
+        self.btn_inter.configure(text=f"🟡 {self.controller.loc.get('intermediate')}")
+        self.btn_adv.configure(text=f"🔴 {self.controller.loc.get('advanced')}")
 
 # ==========================================
 # ФРЕЙМЫ ДЛЯ ПЛАНА ПИТАНИЯ
@@ -246,140 +307,116 @@ class NutritionGoalFrame(StepFrameBase):
     """Фрейм выбора цели для плана питания."""
     def __init__(self, master, controller, **kwargs):
         super().__init__(master, controller, "nutrition_goal_title", "nutrition", **kwargs)
+        self.desc_label = None
+        self.btn_weight_loss = None
+        self.btn_muscle_gain = None
+        self.btn_maintenance = None
         
+    def _create_content(self):
         options_frame = ctk.CTkFrame(self, fg_color="transparent")
         options_frame.pack(expand=True, fill="x", padx=40)
         
         # Описание
-        desc_label = ctk.CTkLabel(self, 
-            text="Выберите вашу основную цель для составления\nперсонализированного плана питания:",
-            font=SUBHEADER_FONT, text_color=TEXT_BODY_COLOR, justify="center")
-        desc_label.pack(pady=(0, 30))
+        self.desc_label = ctk.CTkLabel(self, font=SUBHEADER_FONT, text_color=TEXT_BODY_COLOR, justify="center")
+        self.desc_label.pack(pady=(0, 30))
         
         # Варианты целей питания
-        btn_weight_loss = ctk.CTkButton(options_frame, 
-            text=f"🍎 {self.controller.loc.get('weight_loss')}\n\nСоздать дефицит калорий для снижения веса",
-            font=BODY_FONT, height=80,
-            fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
-            command=self.on_select_weight_loss)
-        btn_weight_loss.pack(fill="x", pady=10)
+        self.btn_weight_loss = ctk.CTkButton(options_frame, 
+                                            font=BODY_FONT, height=80,
+                                            fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
+                                            command=lambda: self.controller.set_nutrition_goal("Похудение"))
+        self.btn_weight_loss.pack(fill="x", pady=10)
         
-        btn_muscle_gain = ctk.CTkButton(options_frame,
-            text=f"💪 {self.controller.loc.get('muscle_gain')}\n\nСоздать профицит калорий для роста мышц",
-            font=BODY_FONT, height=80,
-            fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
-            command=self.on_select_muscle_gain)
-        btn_muscle_gain.pack(fill="x", pady=10)
+        self.btn_muscle_gain = ctk.CTkButton(options_frame,
+                                            font=BODY_FONT, height=80,
+                                            fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
+                                            command=lambda: self.controller.set_nutrition_goal("Набор мышц"))
+        self.btn_muscle_gain.pack(fill="x", pady=10)
         
-        btn_maintenance = ctk.CTkButton(options_frame,
-            text=f"⚖️ {self.controller.loc.get('maintenance')}\n\nСохранить текущий вес и тонус мышц",
-            font=BODY_FONT, height=80,
-            fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
-            command=self.on_select_maintenance)
-        btn_maintenance.pack(fill="x", pady=10)
-
-    def on_select_weight_loss(self):
-        """Обработчик выбора похудения."""
-        self.controller.set_nutrition_goal("Похудение")
-
-    def on_select_muscle_gain(self):
-        """Обработчик выбора набора мышц."""
-        self.controller.set_nutrition_goal("Набор мышц")
-
-    def on_select_maintenance(self):
-        """Обработчик выбора поддержания."""
-        self.controller.set_nutrition_goal("Поддержание")
-
-    """Фрейм выбора цели для плана питания."""
-    def __init__(self, master, controller, **kwargs):
-        super().__init__(master, controller, "nutrition_goal_title", "nutrition", **kwargs)
+        self.btn_maintenance = ctk.CTkButton(options_frame,
+                                            font=BODY_FONT, height=80,
+                                            fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
+                                            command=lambda: self.controller.set_nutrition_goal("Поддержание"))
+        self.btn_maintenance.pack(fill="x", pady=10)
         
-        options_frame = ctk.CTkFrame(self, fg_color="transparent")
-        options_frame.pack(expand=True, fill="x", padx=40)
-        
-        # Описание
-        desc_label = ctk.CTkLabel(self, 
-            text="Выберите вашу основную цель для составления\nперсонализированного плана питания:",
-            font=SUBHEADER_FONT, text_color=TEXT_BODY_COLOR, justify="center")
-        desc_label.pack(pady=(0, 30))
-        
-        # Варианты целей питания
-        btn_weight_loss = ctk.CTkButton(options_frame, 
-            text=f"🍎 {self.controller.loc.get('weight_loss')}\n\nСоздать дефицит калорий для снижения веса",
-            font=BODY_FONT, height=80,
-            fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
-            command=lambda: self.controller.set_nutrition_goal("Похудение"))
-        btn_weight_loss.pack(fill="x", pady=10)
-        
-        btn_muscle_gain = ctk.CTkButton(options_frame,
-            text=f"💪 {self.controller.loc.get('muscle_gain')}\n\nСоздать профицит калорий для роста мышц",
-            font=BODY_FONT, height=80,
-            fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
-            command=lambda: self.controller.set_nutrition_goal("Набор мышц"))
-        btn_muscle_gain.pack(fill="x", pady=10)
-        
-        btn_maintenance = ctk.CTkButton(options_frame,
-            text=f"⚖️ {self.controller.loc.get('maintenance')}\n\nСохранить текущий вес и тонус мышц",
-            font=BODY_FONT, height=80,
-            fg_color=CARD_BG_COLOR, hover_color=ACCENT_COLOR, corner_radius=10,
-            command=lambda: self.controller.set_nutrition_goal("Поддержание"))
-        btn_maintenance.pack(fill="x", pady=10)
+        self.update_texts()
+    
+    def update_texts(self):
+        """Обновляет тексты на фрейме."""
+        super().update_texts()
+        self.desc_label.configure(text=self.controller.loc.get("nutrition_goal_desc"))
+        self.btn_weight_loss.configure(text=f"🍎 {self.controller.loc.get('weight_loss')}\n\n{self.controller.loc.get('weight_loss_desc')}")
+        self.btn_muscle_gain.configure(text=f"💪 {self.controller.loc.get('muscle_gain')}\n\n{self.controller.loc.get('muscle_gain_desc')}")
+        self.btn_maintenance.configure(text=f"⚖️ {self.controller.loc.get('maintenance')}\n\n{self.controller.loc.get('maintenance_desc')}")
 
 class NutritionPlanFrame(BaseFrame):
     """Фрейм отображения плана питания."""
     def __init__(self, master, controller, plan_data, **kwargs):
         super().__init__(master, controller, **kwargs)
         self.plan_data = plan_data
+        self.back_btn = None
+        self.title_label = None
+        self.content_frame = None
         
+        self._create_widgets()
+    
+    def _create_widgets(self):
         # Заголовок с кнопкой назад
         header_frame = ctk.CTkFrame(self, fg_color="transparent")
         header_frame.pack(fill="x", padx=40, pady=(30, 20))
         
-        back_btn = ctk.CTkButton(header_frame, text=self.controller.loc.get("back"), font=BODY_FONT, width=80,
-                                 fg_color="transparent", text_color=TEXT_BODY_COLOR, hover_color=CARD_BG_COLOR,
-                                 command=self.controller.on_back_to_main)
-        back_btn.pack(side="left", anchor="w")
+        self.back_btn = ctk.CTkButton(header_frame, font=BODY_FONT, width=80,
+                                     fg_color="transparent", text_color=TEXT_BODY_COLOR, hover_color=CARD_BG_COLOR,
+                                     command=self.controller.on_back_to_main)
+        self.back_btn.pack(side="left", anchor="w")
         
-        ctk.CTkLabel(self, text="🍎 ПЛАН ПИТАНИЯ", font=HEADER_FONT, text_color=ACCENT_COLOR).pack(pady=(0, 10))
+        self.title_label = ctk.CTkLabel(self, font=HEADER_FONT, text_color=ACCENT_COLOR)
+        self.title_label.pack(pady=(0, 10))
         
         # Основной контент
-        content_frame = ctk.CTkScrollableFrame(self, fg_color=CARD_BG_COLOR, corner_radius=15)
-        content_frame.pack(pady=10, padx=40, fill="both", expand=True)
+        self.content_frame = ctk.CTkScrollableFrame(self, fg_color=CARD_BG_COLOR, corner_radius=15)
+        self.content_frame.pack(pady=10, padx=40, fill="both", expand=True)
         
-        self.display_plan(content_frame)
+        self.display_plan(self.content_frame)
+        self.update_texts()
     
     def display_plan(self, parent):
         """Отображает данные плана питания."""
         # Описание
-        ctk.CTkLabel(parent, text=self.plan_data["description"], 
-                     font=SUBHEADER_FONT, text_color=TEXT_BODY_COLOR, wraplength=600).pack(pady=(20, 10), padx=20)
+        self.desc_label = ctk.CTkLabel(parent, text=self.plan_data["description"], 
+                                      font=SUBHEADER_FONT, text_color=TEXT_BODY_COLOR, wraplength=600)
+        self.desc_label.pack(pady=(20, 10), padx=20)
         
         # Макронутриенты
         macros_frame = ctk.CTkFrame(parent, fg_color="#2C2C2E", corner_radius=10)
         macros_frame.pack(fill="x", pady=10, padx=20)
         
-        ctk.CTkLabel(macros_frame, text="📊 МАКРОНУТРИЕНТЫ В ДЕНЬ", 
-                     font=("Helvetica Neue", 16, "bold"), text_color=TEXT_HEADER_COLOR).pack(pady=(15, 10))
+        self.macros_title = ctk.CTkLabel(macros_frame, font=("Helvetica Neue", 16, "bold"), text_color=TEXT_HEADER_COLOR)
+        self.macros_title.pack(pady=(15, 10))
         
         macros_grid = ctk.CTkFrame(macros_frame, fg_color="transparent")
         macros_grid.pack(pady=(0, 15), padx=20)
         
-        ctk.CTkLabel(macros_grid, text=f"🔥 Калории: {self.plan_data['calories']} ккал",
-                     font=BODY_FONT, text_color=HIGHLIGHT_COLOR).grid(row=0, column=0, padx=20, pady=5, sticky="w")
-        ctk.CTkLabel(macros_grid, text=f"🥩 Белки: {self.plan_data['protein']} г",
-                     font=BODY_FONT, text_color=TEXT_BODY_COLOR).grid(row=0, column=1, padx=20, pady=5, sticky="w")
-        ctk.CTkLabel(macros_grid, text=f"🍞 Углеводы: {self.plan_data['carbs']} г",
-                     font=BODY_FONT, text_color=TEXT_BODY_COLOR).grid(row=1, column=0, padx=20, pady=5, sticky="w")
-        ctk.CTkLabel(macros_grid, text=f"🥑 Жиры: {self.plan_data['fat']} г",
-                     font=BODY_FONT, text_color=TEXT_BODY_COLOR).grid(row=1, column=1, padx=20, pady=5, sticky="w")
+        self.calories_label = ctk.CTkLabel(macros_grid, font=BODY_FONT, text_color=HIGHLIGHT_COLOR)
+        self.calories_label.grid(row=0, column=0, padx=20, pady=5, sticky="w")
+        
+        self.protein_label = ctk.CTkLabel(macros_grid, font=BODY_FONT, text_color=TEXT_BODY_COLOR)
+        self.protein_label.grid(row=0, column=1, padx=20, pady=5, sticky="w")
+        
+        self.carbs_label = ctk.CTkLabel(macros_grid, font=BODY_FONT, text_color=TEXT_BODY_COLOR)
+        self.carbs_label.grid(row=1, column=0, padx=20, pady=5, sticky="w")
+        
+        self.fat_label = ctk.CTkLabel(macros_grid, font=BODY_FONT, text_color=TEXT_BODY_COLOR)
+        self.fat_label.grid(row=1, column=1, padx=20, pady=5, sticky="w")
         
         # Приемы пищи
         meals_frame = ctk.CTkFrame(parent, fg_color="#2C2C2E", corner_radius=10)
         meals_frame.pack(fill="x", pady=10, padx=20)
         
-        ctk.CTkLabel(meals_frame, text="🍽️ ПРИЕМЫ ПИЩИ", 
-                     font=("Helvetica Neue", 16, "bold"), text_color=TEXT_HEADER_COLOR).pack(pady=(15, 10))
+        self.meals_title = ctk.CTkLabel(meals_frame, font=("Helvetica Neue", 16, "bold"), text_color=TEXT_HEADER_COLOR)
+        self.meals_title.pack(pady=(15, 10))
         
+        self.meal_cards = []
         for i, meal in enumerate(self.plan_data["meals"]):
             meal_card = ctk.CTkFrame(meals_frame, fg_color="#3C3C3E", corner_radius=8)
             meal_card.pack(fill="x", pady=5, padx=15)
@@ -391,21 +428,42 @@ class NutritionPlanFrame(BaseFrame):
             meal_info = ctk.CTkFrame(meal_card, fg_color="transparent")
             meal_info.pack(side="left", fill="x", expand=True, padx=10, pady=10)
             
-            ctk.CTkLabel(meal_info, text=meal["name"], 
-                        font=("Helvetica Neue", 14, "bold"), text_color=TEXT_HEADER_COLOR).pack(anchor="w")
-            ctk.CTkLabel(meal_info, text=meal["description"], 
-                        font=BODY_FONT, text_color=TEXT_BODY_COLOR, wraplength=400).pack(anchor="w")
+            name_label = ctk.CTkLabel(meal_info, text=meal["name"], 
+                                     font=("Helvetica Neue", 14, "bold"), text_color=TEXT_HEADER_COLOR)
+            name_label.pack(anchor="w")
+            
+            desc_label = ctk.CTkLabel(meal_info, text=meal["description"], 
+                                     font=BODY_FONT, text_color=TEXT_BODY_COLOR, wraplength=400)
+            desc_label.pack(anchor="w")
+            
+            self.meal_cards.append((time_label, name_label, desc_label))
         
         # Советы
         tips_frame = ctk.CTkFrame(parent, fg_color="#2C2C2E", corner_radius=10)
         tips_frame.pack(fill="x", pady=10, padx=20)
         
-        ctk.CTkLabel(tips_frame, text="💡 СОВЕТЫ", 
-                     font=("Helvetica Neue", 16, "bold"), text_color=TEXT_HEADER_COLOR).pack(pady=(15, 10))
+        self.tips_title = ctk.CTkLabel(tips_frame, font=("Helvetica Neue", 16, "bold"), text_color=TEXT_HEADER_COLOR)
+        self.tips_title.pack(pady=(15, 10))
         
+        self.tip_labels = []
         for i, tip in enumerate(self.plan_data["tips"]):
-            ctk.CTkLabel(tips_frame, text=f"• {tip}", 
-                        font=BODY_FONT, text_color=TEXT_BODY_COLOR, justify="left").pack(anchor="w", padx=20, pady=5)
+            tip_label = ctk.CTkLabel(tips_frame, text=f"• {tip}", 
+                                    font=BODY_FONT, text_color=TEXT_BODY_COLOR, justify="left")
+            tip_label.pack(anchor="w", padx=20, pady=5)
+            self.tip_labels.append(tip_label)
+    
+    def update_texts(self):
+        """Обновляет тексты на фрейме."""
+        super().update_texts()
+        self.back_btn.configure(text=self.controller.loc.get("back_to_main"))
+        self.title_label.configure(text="🍎 " + self.controller.loc.get("nutrition_plan_title"))
+        self.macros_title.configure(text="📊 " + self.controller.loc.get("macronutrients"))
+        self.calories_label.configure(text=f"🔥 {self.controller.loc.get('calories')}: {self.plan_data['calories']} {self.controller.loc.get('kcal')}")
+        self.protein_label.configure(text=f"🥩 {self.controller.loc.get('protein')}: {self.plan_data['protein']} {self.controller.loc.get('grams')}")
+        self.carbs_label.configure(text=f"🍞 {self.controller.loc.get('carbs')}: {self.plan_data['carbs']} {self.controller.loc.get('grams')}")
+        self.fat_label.configure(text=f"🥑 {self.controller.loc.get('fat')}: {self.plan_data['fat']} {self.controller.loc.get('grams')}")
+        self.meals_title.configure(text="🍽️ " + self.controller.loc.get("meals"))
+        self.tips_title.configure(text="💡 " + self.controller.loc.get("tips"))
 
 # ==========================================
 # ФРЕЙМЫ ДЛЯ СУЩЕСТВУЮЩИХ ПЛАНОВ И ИСТОРИИ
@@ -415,22 +473,33 @@ class ExistingPlansFrame(BaseFrame):
     """Фрейм выбора существующего плана тренировок."""
     def __init__(self, master, controller, **kwargs):
         super().__init__(master, controller, **kwargs)
+        self.back_btn = None
+        self.title_label = None
+        self.subtitle_label = None
+        self.plans_frame = None
         
+        self._create_widgets()
+    
+    def _create_widgets(self):
         header_frame = ctk.CTkFrame(self, fg_color="transparent")
         header_frame.pack(fill="x", padx=40, pady=(30, 10))
         
-        back_btn = ctk.CTkButton(header_frame, text=self.controller.loc.get("back_to_main"), font=BODY_FONT,
-                                fg_color="transparent", text_color=TEXT_BODY_COLOR, hover_color=CARD_BG_COLOR,
-                                command=self.controller.on_back_to_main)
-        back_btn.pack(side="left")
+        self.back_btn = ctk.CTkButton(header_frame, font=BODY_FONT,
+                                     fg_color="transparent", text_color=TEXT_BODY_COLOR, hover_color=CARD_BG_COLOR,
+                                     command=self.controller.on_back_to_main)
+        self.back_btn.pack(side="left")
         
-        ctk.CTkLabel(self, text="📁 ВАШИ ПЛАНЫ ТРЕНИРОВОК", font=HEADER_FONT, text_color=ACCENT_COLOR).pack(pady=(20, 10))
-        ctk.CTkLabel(self, text="Выберите сохраненный план для повторения:", font=SUBHEADER_FONT, text_color=TEXT_BODY_COLOR).pack(pady=(0, 20))
+        self.title_label = ctk.CTkLabel(self, font=HEADER_FONT, text_color=ACCENT_COLOR)
+        self.title_label.pack(pady=(20, 10))
+        
+        self.subtitle_label = ctk.CTkLabel(self, font=SUBHEADER_FONT, text_color=TEXT_BODY_COLOR)
+        self.subtitle_label.pack(pady=(0, 20))
         
         # Список планов
         self.plans_frame = ctk.CTkScrollableFrame(self, fg_color=CARD_BG_COLOR, corner_radius=15)
         self.plans_frame.pack(pady=10, padx=40, fill="both", expand=True)
         
+        self.update_texts()
         # Загрузка планов
         self.load_plans()
     
@@ -448,7 +517,7 @@ class ExistingPlansFrame(BaseFrame):
             widget.destroy()
         
         if not plans:
-            ctk.CTkLabel(self.plans_frame, text="У вас пока нет сохраненных планов", 
+            ctk.CTkLabel(self.plans_frame, text=self.controller.loc.get("no_saved_plans"), 
                         font=BODY_FONT, text_color=TEXT_BODY_COLOR).pack(pady=20)
             return
         
@@ -464,52 +533,73 @@ class ExistingPlansFrame(BaseFrame):
         top_frame = ctk.CTkFrame(card, fg_color="transparent")
         top_frame.pack(fill="x", padx=15, pady=10)
         
-        ctk.CTkLabel(top_frame, text=plan["name"], font=("Helvetica Neue", 16, "bold"), 
-                    text_color=TEXT_HEADER_COLOR).pack(side="left", anchor="w")
+        name_label = ctk.CTkLabel(top_frame, text=plan["name"], font=("Helvetica Neue", 16, "bold"), 
+                                 text_color=TEXT_HEADER_COLOR)
+        name_label.pack(side="left", anchor="w")
         
-        ctk.CTkLabel(top_frame, text=f"📅 {plan['date']}", font=("Helvetica Neue", 12),
-                    text_color=HIGHLIGHT_COLOR).pack(side="right", anchor="e")
+        date_label = ctk.CTkLabel(top_frame, text=f"📅 {plan['date']}", font=("Helvetica Neue", 12),
+                                 text_color=HIGHLIGHT_COLOR)
+        date_label.pack(side="right", anchor="e")
         
         # Детали плана
         details_frame = ctk.CTkFrame(card, fg_color="transparent")
         details_frame.pack(fill="x", padx=15, pady=(0, 10))
         
-        ctk.CTkLabel(details_frame, text=f"Уровень: {plan['level']}", 
-                    font=("Helvetica Neue", 13), text_color=TEXT_BODY_COLOR).pack(side="left", padx=(0, 20))
+        level_label = ctk.CTkLabel(details_frame, text=f"{self.controller.loc.get('level')}: {plan['level']}", 
+                                  font=("Helvetica Neue", 13), text_color=TEXT_BODY_COLOR)
+        level_label.pack(side="left", padx=(0, 20))
         
-        ctk.CTkLabel(details_frame, text=f"Цель: {plan['goal']}", 
-                    font=("Helvetica Neue", 13), text_color=TEXT_BODY_COLOR).pack(side="left", padx=(0, 20))
+        goal_label = ctk.CTkLabel(details_frame, text=f"{self.controller.loc.get('goal')}: {plan['goal']}", 
+                                 font=("Helvetica Neue", 13), text_color=TEXT_BODY_COLOR)
+        goal_label.pack(side="left", padx=(0, 20))
         
-        ctk.CTkLabel(details_frame, text=f"Место: {plan['condition']}", 
-                    font=("Helvetica Neue", 13), text_color=TEXT_BODY_COLOR).pack(side="left")
+        condition_label = ctk.CTkLabel(details_frame, text=f"{self.controller.loc.get('place')}: {plan['condition']}", 
+                                      font=("Helvetica Neue", 13), text_color=TEXT_BODY_COLOR)
+        condition_label.pack(side="left")
         
         # Кнопка загрузить
         btn_frame = ctk.CTkFrame(card, fg_color="transparent")
         btn_frame.pack(fill="x", padx=15, pady=(0, 10))
         
-        ctk.CTkButton(btn_frame, text="ЗАГРУЗИТЬ ПЛАН", font=BODY_FONT, height=35,
-                     fg_color=ACCENT_COLOR, hover_color="#0069D9",
-                     command=lambda p=plan: self.controller.load_existing_plan(p["id"])).pack(side="right")
+        load_btn = ctk.CTkButton(btn_frame, text=self.controller.loc.get("load_plan"), font=BODY_FONT, height=35,
+                                fg_color=ACCENT_COLOR, hover_color="#0069D9",
+                                command=lambda p=plan: self.controller.load_existing_plan(p["id"]))
+        load_btn.pack(side="right")
+    
+    def update_texts(self):
+        """Обновляет тексты на фрейме."""
+        super().update_texts()
+        self.back_btn.configure(text=self.controller.loc.get("back_to_main"))
+        self.title_label.configure(text="📁 " + self.controller.loc.get("your_workout_plans"))
+        self.subtitle_label.configure(text=self.controller.loc.get("select_saved_plan"))
 
 class WorkoutHistoryFrame(BaseFrame):
     """Фрейм истории тренировок."""
     def __init__(self, master, controller, **kwargs):
         super().__init__(master, controller, **kwargs)
+        self.back_btn = None
+        self.title_label = None
+        self.history_frame = None
         
+        self._create_widgets()
+    
+    def _create_widgets(self):
         header_frame = ctk.CTkFrame(self, fg_color="transparent")
         header_frame.pack(fill="x", padx=40, pady=(30, 10))
         
-        back_btn = ctk.CTkButton(header_frame, text=self.controller.loc.get("back_to_main"), font=BODY_FONT,
-                                fg_color="transparent", text_color=TEXT_BODY_COLOR, hover_color=CARD_BG_COLOR,
-                                command=self.controller.on_back_to_main)
-        back_btn.pack(side="left")
+        self.back_btn = ctk.CTkButton(header_frame, font=BODY_FONT,
+                                     fg_color="transparent", text_color=TEXT_BODY_COLOR, hover_color=CARD_BG_COLOR,
+                                     command=self.controller.on_back_to_main)
+        self.back_btn.pack(side="left")
         
-        ctk.CTkLabel(self, text="📊 ИСТОРИЯ ТРЕНИРОВОК", font=HEADER_FONT, text_color=ACCENT_COLOR).pack(pady=(20, 10))
+        self.title_label = ctk.CTkLabel(self, font=HEADER_FONT, text_color=ACCENT_COLOR)
+        self.title_label.pack(pady=(20, 10))
         
         # Список истории
         self.history_frame = ctk.CTkScrollableFrame(self, fg_color=CARD_BG_COLOR, corner_radius=15)
         self.history_frame.pack(pady=10, padx=40, fill="both", expand=True)
         
+        self.update_texts()
         # Загрузка истории
         self.load_history()
     
@@ -527,7 +617,7 @@ class WorkoutHistoryFrame(BaseFrame):
             widget.destroy()
         
         if not history:
-            ctk.CTkLabel(self.history_frame, text="У вас пока нет завершенных тренировок", 
+            ctk.CTkLabel(self.history_frame, text=self.controller.loc.get("no_workout_history"), 
                         font=BODY_FONT, text_color=TEXT_BODY_COLOR).pack(pady=20)
             return
         
@@ -543,36 +633,49 @@ class WorkoutHistoryFrame(BaseFrame):
         top_frame = ctk.CTkFrame(card, fg_color="transparent")
         top_frame.pack(fill="x", padx=15, pady=10)
         
-        ctk.CTkLabel(top_frame, text=record["workout_name"], font=("Helvetica Neue", 16, "bold"), 
-                    text_color=TEXT_HEADER_COLOR).pack(side="left", anchor="w")
+        name_label = ctk.CTkLabel(top_frame, text=record["workout_name"], font=("Helvetica Neue", 16, "bold"), 
+                                 text_color=TEXT_HEADER_COLOR)
+        name_label.pack(side="left", anchor="w")
         
-        ctk.CTkLabel(top_frame, text=f"📅 {record['completed_at']}", font=("Helvetica Neue", 12),
-                    text_color=HIGHLIGHT_COLOR).pack(side="right", anchor="e")
+        date_label = ctk.CTkLabel(top_frame, text=f"📅 {record['completed_at']}", font=("Helvetica Neue", 12),
+                                 text_color=HIGHLIGHT_COLOR)
+        date_label.pack(side="right", anchor="e")
         
         # Детали тренировки
         details_frame = ctk.CTkFrame(card, fg_color="transparent")
         details_frame.pack(fill="x", padx=15, pady=(0, 10))
         
-        ctk.CTkLabel(details_frame, text=f"⏱️ Длительность: {record['duration']} мин", 
-                    font=("Helvetica Neue", 13), text_color=TEXT_BODY_COLOR).pack(side="left", padx=(0, 20))
+        duration_label = ctk.CTkLabel(details_frame, text=f"⏱️ {self.controller.loc.get('duration')}: {record['duration']} {self.controller.loc.get('minutes')}", 
+                                     font=("Helvetica Neue", 13), text_color=TEXT_BODY_COLOR)
+        duration_label.pack(side="left", padx=(0, 20))
         
-        ctk.CTkLabel(details_frame, text=f"✅ Упражнений: {len(record['exercises'])}", 
-                    font=("Helvetica Neue", 13), text_color=TEXT_BODY_COLOR).pack(side="left")
+        exercises_label = ctk.CTkLabel(details_frame, text=f"✅ {self.controller.loc.get('exercises')}: {len(record['exercises'])}", 
+                                      font=("Helvetica Neue", 13), text_color=TEXT_BODY_COLOR)
+        exercises_label.pack(side="left")
         
         # Список упражнений (свернутый)
         exercises_frame = ctk.CTkFrame(card, fg_color="#3C3C3E", corner_radius=8)
         exercises_frame.pack(fill="x", padx=15, pady=(0, 10))
         
-        ctk.CTkLabel(exercises_frame, text="Выполненные упражнения:", 
-                    font=("Helvetica Neue", 12, "bold"), text_color=TEXT_BODY_COLOR).pack(anchor="w", padx=10, pady=5)
+        exercises_title = ctk.CTkLabel(exercises_frame, text=self.controller.loc.get("completed_exercises"), 
+                                      font=("Helvetica Neue", 12, "bold"), text_color=TEXT_BODY_COLOR)
+        exercises_title.pack(anchor="w", padx=10, pady=5)
         
         for i, exercise in enumerate(record['exercises'][:3]):  # Показываем только первые 3
             ctk.CTkLabel(exercises_frame, text=f"• {exercise}", 
                         font=("Helvetica Neue", 11), text_color=TEXT_BODY_COLOR).pack(anchor="w", padx=20, pady=2)
         
         if len(record['exercises']) > 3:
-            ctk.CTkLabel(exercises_frame, text=f"... и еще {len(record['exercises']) - 3} упражнений", 
-                        font=("Helvetica Neue", 11), text_color=HIGHLIGHT_COLOR).pack(anchor="w", padx=20, pady=2)
+            remaining = len(record['exercises']) - 3
+            remaining_label = ctk.CTkLabel(exercises_frame, text=f"... {self.controller.loc.get('and_more')} {remaining} {self.controller.loc.get('exercises_remaining')}", 
+                                          font=("Helvetica Neue", 11), text_color=HIGHLIGHT_COLOR)
+            remaining_label.pack(anchor="w", padx=20, pady=2)
+    
+    def update_texts(self):
+        """Обновляет тексты на фрейме."""
+        super().update_texts()
+        self.back_btn.configure(text=self.controller.loc.get("back_to_main"))
+        self.title_label.configure(text="📊 " + self.controller.loc.get("workout_history"))
 
 # ==========================================
 # ЭКРАНЫ РЕЗУЛЬТАТОВ И ПРОГРЕССА
@@ -585,16 +688,31 @@ class ExerciseFrame(BaseFrame):
         
         self.all_exercises = []
         self.current_stage_idx = 0
-        self.stages = ["🔥 РАЗМИНКА", "⚡ ОСНОВНАЯ ТРЕНИРОВКА", "🧘 ЗАМИНКА"]
+        self.stages = []
         self.start_time = None
         self.completed_exercises = []
         self.workout_name = None
         
+        self.stage_label = None
+        self.sub_label = None
+        self.exercise_list = None
+        self.name_frame = None
+        self.name_entry = None
+        self.footer = None
+        self.btn_next = None
+        self.save_buttons_frame = None
+        self.btn_save_plan = None
+        self.btn_save_history = None
+        
+        self._create_widgets()
+        self.update_texts()
+
+    def _create_widgets(self):
         # Заголовок этапа
         self.stage_label = ctk.CTkLabel(self, text="", font=HEADER_FONT, text_color=ACCENT_COLOR)
         self.stage_label.pack(pady=(20, 5))
         
-        self.sub_label = ctk.CTkLabel(self, text="Выполните все упражнения этапа", font=BODY_FONT, text_color=TEXT_BODY_COLOR)
+        self.sub_label = ctk.CTkLabel(self, text="", font=BODY_FONT, text_color=TEXT_BODY_COLOR)
         self.sub_label.pack(pady=(0, 15))
 
         # Список упражнений
@@ -605,10 +723,11 @@ class ExerciseFrame(BaseFrame):
         self.name_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.name_frame.pack(fill="x", padx=40, pady=(10, 0))
         
-        ctk.CTkLabel(self.name_frame, text="Название тренировки:", 
-                    font=BODY_FONT, text_color=TEXT_BODY_COLOR).pack(side="left", padx=(0, 10))
+        name_prompt = ctk.CTkLabel(self.name_frame, text="", 
+                                  font=BODY_FONT, text_color=TEXT_BODY_COLOR)
+        name_prompt.pack(side="left", padx=(0, 10))
         
-        self.name_entry = ctk.CTkEntry(self.name_frame, placeholder_text="Введите название тренировки",
+        self.name_entry = ctk.CTkEntry(self.name_frame, placeholder_text="",
                                       font=BODY_FONT, width=300)
         self.name_entry.pack(side="left", fill="x", expand=True)
 
@@ -616,7 +735,7 @@ class ExerciseFrame(BaseFrame):
         self.footer = ctk.CTkFrame(self, fg_color="transparent")
         self.footer.pack(fill="x", padx=40, pady=20)
         
-        self.btn_next = ctk.CTkButton(self.footer, text="Следующий этап", font=BUTTON_FONT, 
+        self.btn_next = ctk.CTkButton(self.footer, text="", font=BUTTON_FONT, 
                                       height=50, fg_color=ACCENT_COLOR, state="disabled",
                                       command=self.next_stage)
         self.btn_next.pack(fill="x")
@@ -626,14 +745,14 @@ class ExerciseFrame(BaseFrame):
         self.save_buttons_frame.pack(fill="x", pady=(10, 0))
         
         # Кнопка сохранения как плана
-        self.btn_save_plan = ctk.CTkButton(self.save_buttons_frame, text="💾 СОХРАНИТЬ ПЛАН ТРЕНИРОВКИ", 
+        self.btn_save_plan = ctk.CTkButton(self.save_buttons_frame, 
                                           font=BODY_FONT, height=40, 
                                           fg_color=HIGHLIGHT_COLOR, hover_color="#E08500",
                                           command=self.save_as_training_plan)
         self.btn_save_plan.pack(side="left", fill="x", expand=True, padx=(0, 5))
         
         # Кнопка сохранения в историю
-        self.btn_save_history = ctk.CTkButton(self.save_buttons_frame, text="📊 СОХРАНИТЬ В ИСТОРИЮ", 
+        self.btn_save_history = ctk.CTkButton(self.save_buttons_frame, 
                                              font=BODY_FONT, height=40,
                                              fg_color="#30D158", hover_color="#20B148",
                                              command=self.save_to_history)
@@ -645,22 +764,32 @@ class ExerciseFrame(BaseFrame):
         self.current_stage_idx = 0
         self.start_time = datetime.now()
         self.completed_exercises = []
-        self.workout_name = f"Тренировка от {datetime.now().strftime('%d.%m.%Y %H:%M')}"
+        self.workout_name = f"{self.controller.loc.get('workout')} {datetime.now().strftime('%d.%m.%Y %H:%M')}"
         self.name_entry.delete(0, 'end')
         self.name_entry.insert(0, self.workout_name)
+        
+        # Обновляем названия этапов
+        self.stages = [
+            f"🔥 {self.controller.loc.get('warmup')}",
+            f"⚡ {self.controller.loc.get('main_workout')}",
+            f"🧘 {self.controller.loc.get('cooldown')}"
+        ]
+        
         self.show_stage()
 
     def get_current_stage_data(self):
         """Фильтрует упражнения для текущего этапа."""
         stage_name = self.stages[self.current_stage_idx]
         
-        if "РАЗМИНКА" in stage_name:
-            return [ex for ex in self.all_exercises if "РАЗМИНКА" in ex]
-        elif "ОСНОВНАЯ" in stage_name:
+        if self.controller.loc.get('warmup') in stage_name:
+            return [ex for ex in self.all_exercises if self.controller.loc.get('warmup') in ex]
+        elif self.controller.loc.get('main_workout') in stage_name:
             # Основная тренировка - все упражнения, кроме разминки и заминки
-            return [ex for ex in self.all_exercises if "РАЗМИНКА" not in ex and "ЗАМИНКА" not in ex]
+            return [ex for ex in self.all_exercises if 
+                   self.controller.loc.get('warmup') not in ex and 
+                   self.controller.loc.get('cooldown') not in ex]
         else:  # Заминка
-            return [ex for ex in self.all_exercises if "ЗАМИНКА" in ex]
+            return [ex for ex in self.all_exercises if self.controller.loc.get('cooldown') in ex]
 
     def show_stage(self):
         """Отрисовывает упражнения текущего этапа."""
@@ -690,7 +819,7 @@ class ExerciseFrame(BaseFrame):
                                  command=self.check_completion)
             cb.pack(pady=15, padx=15, anchor="w")
         
-        next_text = "Следующий этап" if self.current_stage_idx < 2 else "Завершить тренировку"
+        next_text = self.controller.loc.get("next_stage") if self.current_stage_idx < 2 else self.controller.loc.get("finish_workout")
         self.btn_next.configure(state="disabled", text=next_text)
         self.check_completion()
 
@@ -721,202 +850,101 @@ class ExerciseFrame(BaseFrame):
 
     def finish_workout(self):
         """Завершает тренировку и сохраняет историю."""
-        from tkinter import messagebox
-        
         duration = int((datetime.now() - self.start_time).total_seconds() / 60)
         workout_name = self.name_entry.get().strip() or self.workout_name
         
         # Сохраняем историю тренировки
         self.controller.save_workout_history(workout_name, self.completed_exercises, duration)
         
-        messagebox.showinfo("Поздравляем!", f"Тренировка '{workout_name}' успешно завершена и сохранена в истории!")
+        messagebox.showinfo(self.controller.loc.get("congratulations"), 
+                           f"{self.controller.loc.get('workout_complete')} '{workout_name}'!")
         self.controller.on_back_to_main()
 
     def save_as_training_plan(self):
         """Сохраняет текущую тренировку как план."""
-        from tkinter import messagebox
-        
-        plan_name = self.name_entry.get().strip() or f"План тренировки от {datetime.now().strftime('%d.%m.%Y')}"
+        plan_name = self.name_entry.get().strip() or f"{self.controller.loc.get('training_plan')} {datetime.now().strftime('%d.%m.%Y')}"
         
         if hasattr(self.controller, 'wizard_selections'):
-            level = self.controller.wizard_selections.get("level", "Новичок")
-            goal = self.controller.wizard_selections.get("goal", "Похудение")
-            condition = self.controller.wizard_selections.get("condition", "Дом")
+            level = self.controller.wizard_selections.get("level", self.controller.loc.get("beginner"))
+            goal = self.controller.wizard_selections.get("goal", self.controller.loc.get("weight_loss"))
+            condition = self.controller.wizard_selections.get("condition", self.controller.loc.get("home"))
             
             # Сохраняем план тренировки
             self.controller.save_training_plan_with_history(plan_name, level, goal, condition, self.all_exercises)
-            messagebox.showinfo("Сохранено", f"План тренировки '{plan_name}' успешно сохранен!")
+            messagebox.showinfo(self.controller.loc.get("saved"), 
+                              f"{self.controller.loc.get('plan_saved_message')} '{plan_name}'!")
 
     def save_to_history(self):
         """Сохраняет текущую тренировку в историю."""
-        from tkinter import messagebox
-        
-        workout_name = self.name_entry.get().strip() or f"Тренировка от {datetime.now().strftime('%d.%m.%Y %H:%M')}"
+        workout_name = self.name_entry.get().strip() or f"{self.controller.loc.get('workout')} {datetime.now().strftime('%d.%m.%Y %H:%M')}"
         duration = int((datetime.now() - self.start_time).total_seconds() / 60) if self.start_time else 0
         
         # Сохраняем историю тренировки
         self.controller.save_workout_history(workout_name, self.completed_exercises, duration)
-        messagebox.showinfo("Сохранено", f"Тренировка '{workout_name}' сохранена в истории!")
-    """Экран тренировки с поэтапным прохождением."""
-    def __init__(self, master, controller, **kwargs):
-        super().__init__(master, controller, **kwargs)
-        
-        self.all_exercises = []
-        self.current_stage_idx = 0
-        self.stages = ["🔥 РАЗМИНКА", "⚡ ОСНОВНАЯ ТРЕНИРОВКА", "🧘 ЗАМИНКА"]
-        self.start_time = None
-        self.completed_exercises = []
-        
-        # Заголовок этапа
-        self.stage_label = ctk.CTkLabel(self, text="", font=HEADER_FONT, text_color=ACCENT_COLOR)
-        self.stage_label.pack(pady=(20, 5))
-        
-        self.sub_label = ctk.CTkLabel(self, text="Выполните все упражнения этапа", font=BODY_FONT, text_color=TEXT_BODY_COLOR)
-        self.sub_label.pack(pady=(0, 15))
+        messagebox.showinfo(self.controller.loc.get("saved"), 
+                          f"{self.controller.loc.get('workout_saved_message')} '{workout_name}'!")
 
-        # Список упражнений
-        self.exercise_list = ctk.CTkScrollableFrame(self, fg_color=CARD_BG_COLOR, corner_radius=15)
-        self.exercise_list.pack(pady=10, padx=40, fill="both", expand=True)
-
-        # Нижняя панель с кнопкой
-        self.footer = ctk.CTkFrame(self, fg_color="transparent")
-        self.footer.pack(fill="x", padx=40, pady=20)
+    def update_texts(self):
+        """Обновляет тексты на фрейме."""
+        super().update_texts()
+        self.sub_label.configure(text=self.controller.loc.get("complete_all_exercises"))
         
-        self.btn_next = ctk.CTkButton(self.footer, text="Следующий этап", font=BUTTON_FONT, 
-                                      height=50, fg_color=ACCENT_COLOR, state="disabled",
-                                      command=self.next_stage)
-        self.btn_next.pack(fill="x")
+        # Обновляем плейсхолдер для названия тренировки
+        self.name_entry.configure(placeholder_text=self.controller.loc.get("enter_workout_name"))
         
-        # Кнопка сохранения плана
-        self.btn_save = ctk.CTkButton(self.footer, text="💾 СОХРАНИТЬ ПЛАН", font=BODY_FONT,
-                                      height=40, fg_color=HIGHLIGHT_COLOR, hover_color="#E08500",
-                                      command=self.save_current_plan)
-        self.btn_save.pack(pady=(10, 0))
-
-    def load_exercises(self, exercises):
-        """Загружает упражнения."""
-        self.all_exercises = exercises
-        self.current_stage_idx = 0
-        self.start_time = datetime.now()
-        self.completed_exercises = []
-        self.show_stage()
-
-    def get_current_stage_data(self):
-        """Фильтрует упражнения для текущего этапа."""
-        stage_name = self.stages[self.current_stage_idx]
+        # Обновляем названия этапов
+        if self.all_exercises:
+            self.stages = [
+                f"🔥 {self.controller.loc.get('warmup')}",
+                f"⚡ {self.controller.loc.get('main_workout')}",
+                f"🧘 {self.controller.loc.get('cooldown')}"
+            ]
+            if self.current_stage_idx < len(self.stages):
+                self.stage_label.configure(text=self.stages[self.current_stage_idx])
         
-        if "РАЗМИНКА" in stage_name:
-            return [ex for ex in self.all_exercises if "РАЗМИНКА" in ex]
-        elif "ОСНОВНАЯ" in stage_name:
-            # Основная тренировка - все упражнения, кроме разминки и заминки
-            return [ex for ex in self.all_exercises if "РАЗМИНКА" not in ex and "ЗАМИНКА" not in ex]
-        else:  # Заминка
-            return [ex for ex in self.all_exercises if "ЗАМИНКА" in ex]
-
-    def show_stage(self):
-        """Отрисовывает упражнения текущего этапа."""
-        for widget in self.exercise_list.winfo_children():
-            widget.destroy()
-            
-        current_stage_name = self.stages[self.current_stage_idx]
-        self.stage_label.configure(text=current_stage_name)
-        
-        stage_data = self.get_current_stage_data()
-        self.checkbox_vars = []
-
-        if not stage_data:
-            self.next_stage()
-            return
-
-        for ex in stage_data:
-            var = ctk.StringVar(value="off")
-            self.checkbox_vars.append(var)
-            
-            card = ctk.CTkFrame(self.exercise_list, fg_color="#2C2C2E", corner_radius=10)
-            card.pack(fill="x", pady=5, padx=5)
-            
-            cb = ctk.CTkCheckBox(card, text=ex, variable=var, onvalue="on", offvalue="off",
-                                 font=("Helvetica Neue", 15), text_color=TEXT_HEADER_COLOR,
-                                 checkmark_color=ACCENT_COLOR,
-                                 command=self.check_completion)
-            cb.pack(pady=15, padx=15, anchor="w")
-        
-        next_text = "Следующий этап" if self.current_stage_idx < 2 else "Завершить тренировку"
-        self.btn_next.configure(state="disabled", text=next_text)
-        self.check_completion()
-
-    def check_completion(self):
-        """Проверяет, все ли галочки стоят."""
-        all_done = all(v.get() == "on" for v in self.checkbox_vars)
-        if all_done:
-            self.btn_next.configure(state="normal", fg_color=ACCENT_COLOR)
+        # Обновляем кнопки
+        if self.current_stage_idx < 2:
+            self.btn_next.configure(text=self.controller.loc.get("next_stage"))
         else:
-            self.btn_next.configure(state="disabled")
-
-    def next_stage(self):
-        """Переход к следующему этапу или завершение."""
-        # Сохраняем выполненные упражнения
-        stage_data = self.get_current_stage_data()
-        for i, var in enumerate(self.checkbox_vars):
-            if var.get() == "on":
-                ex_name = stage_data[i]
-                self.completed_exercises.append(ex_name)
-                self.controller.on_check_exercise(ex_name, True)
-
-        if self.current_stage_idx < len(self.stages) - 1:
-            self.current_stage_idx += 1
-            self.show_stage()
-        else:
-            # Завершение тренировки
-            self.finish_workout()
-
-    def finish_workout(self):
-        """Завершает тренировку и сохраняет историю."""
-        from datetime import datetime
-        duration = int((datetime.now() - self.start_time).total_seconds() / 60)
+            self.btn_next.configure(text=self.controller.loc.get("finish_workout"))
         
-        workout_name = f"Тренировка от {datetime.now().strftime('%d.%m.%Y')}"
-        
-        # Сохраняем историю тренировки
-        self.controller.save_workout_history(workout_name, self.completed_exercises, duration)
-        
-        messagebox.showinfo("Поздравляем!", "Тренировка успешно завершена!")
-        self.controller.on_back_to_main()
-
-    def save_current_plan(self):
-        """Сохраняет текущий план тренировок."""
-        plan_name = f"План тренировки от {datetime.now().strftime('%d.%m.%Y')}"
-        
-        if hasattr(self.controller, 'wizard_selections'):
-            level = self.controller.wizard_selections.get("level", "Новичок")
-            goal = self.controller.wizard_selections.get("goal", "Похудение")
-            condition = self.controller.wizard_selections.get("condition", "Дом")
-            
-            self.controller.save_training_plan(plan_name, level, goal, condition, self.all_exercises)
-            messagebox.showinfo("Сохранено", "План тренировки успешно сохранен!")
+        self.btn_save_plan.configure(text="💾 " + self.controller.loc.get("save_plan"))
+        self.btn_save_history.configure(text="📊 " + self.controller.loc.get("save_workout"))
 
 class ProgressFrame(BaseFrame):
     """Экран истории прогресса."""
     def __init__(self, master, controller, **kwargs):
         super().__init__(master, controller, **kwargs)
+        self.back_btn = None
+        self.title_label = None
+        self.progress_display = None
         
+        self._create_widgets()
+    
+    def _create_widgets(self):
         header_frame = ctk.CTkFrame(self, fg_color="transparent")
         header_frame.pack(fill="x", padx=40, pady=(30, 10))
-        ctk.CTkButton(header_frame, text=self.controller.loc.get("back_to_main"), font=BODY_FONT,
-                        fg_color="transparent", text_color=TEXT_BODY_COLOR, hover_color=CARD_BG_COLOR,
-                        command=self.controller.on_back_to_main).pack(side="left")
-                        
-        ctk.CTkLabel(self, text=self.controller.loc.get("workout_history"), font=HEADER_FONT, text_color=TEXT_HEADER_COLOR).pack(pady=(20, 20))
+        
+        self.back_btn = ctk.CTkButton(header_frame, font=BODY_FONT,
+                                     fg_color="transparent", text_color=TEXT_BODY_COLOR, hover_color=CARD_BG_COLOR,
+                                     command=self.controller.on_back_to_main)
+        self.back_btn.pack(side="left")
+        
+        self.title_label = ctk.CTkLabel(self, font=HEADER_FONT, text_color=TEXT_HEADER_COLOR)
+        self.title_label.pack(pady=(20, 20))
         
         self.progress_display = ctk.CTkScrollableFrame(self, fg_color=CARD_BG_COLOR, corner_radius=15)
         self.progress_display.pack(pady=10, padx=40, fill="both", expand=True)
+        
+        self.update_texts()
 
     def load_progress(self, progress_data):
         for widget in self.progress_display.winfo_children():
             widget.destroy()
         
         if not progress_data:
-            ctk.CTkLabel(self.progress_display, text=self.controller.loc.get("no_history"), font=BODY_FONT, text_color=TEXT_BODY_COLOR).pack(pady=20)
+            ctk.CTkLabel(self.progress_display, text=self.controller.loc.get("no_history"), 
+                        font=BODY_FONT, text_color=TEXT_BODY_COLOR).pack(pady=20)
             return
 
         for entry in progress_data:
@@ -924,11 +952,19 @@ class ProgressFrame(BaseFrame):
             row.pack(fill="x", pady=5)
             
             date_str = entry.get('timestamp', '???')[:16].replace('T', ' ')
-            ex_name = entry.get('exercise_name', 'Неизвестно')
+            ex_name = entry.get('exercise_name', self.controller.loc.get("unknown"))
             
-            ctk.CTkLabel(row, text=f"📅 {date_str}", font=("Helvetica Neue", 12), text_color=HIGHLIGHT_COLOR).pack(anchor="w")
-            ctk.CTkLabel(row, text=f"✅ Выполнено: {ex_name}", font=("Helvetica Neue", 14, "bold"), text_color=TEXT_HEADER_COLOR).pack(anchor="w", pady=(2, 10))
+            ctk.CTkLabel(row, text=f"📅 {date_str}", font=("Helvetica Neue", 12), 
+                        text_color=HIGHLIGHT_COLOR).pack(anchor="w")
+            ctk.CTkLabel(row, text=f"✅ {self.controller.loc.get('completed')}: {ex_name}", 
+                        font=("Helvetica Neue", 14, "bold"), text_color=TEXT_HEADER_COLOR).pack(anchor="w", pady=(2, 10))
             ctk.CTkFrame(row, height=1, fg_color=CARD_BG_COLOR).pack(fill="x")
+    
+    def update_texts(self):
+        """Обновляет тексты на фрейме."""
+        super().update_texts()
+        self.back_btn.configure(text=self.controller.loc.get("back_to_main"))
+        self.title_label.configure(text=self.controller.loc.get("progress"))
 
 # ==========================================
 # МОДАЛЬНЫЕ ОКНА
@@ -943,32 +979,53 @@ class AuthWindow(ctk.CTkToplevel):
         self.protocol("WM_DELETE_WINDOW", self.controller.on_close) 
         self.configure(fg_color=ctk.ThemeManager.theme["CTk"]["fg_color"][1])
         
+        self.entry_user = None
+        self.entry_pass = None
+        
         self._create_widgets()
         
     def _create_widgets(self):
         ctk.CTkLabel(self, text="🏋️", font=("Helvetica Neue", 60)).pack(pady=(40, 10))
-        ctk.CTkLabel(self, text=self.controller.loc.get("login_title"), font=HEADER_FONT, text_color=TEXT_HEADER_COLOR).pack(pady=(0, 30))
         
-        self.entry_user = ctk.CTkEntry(self, placeholder_text=self.controller.loc.get("username"), height=40, font=BODY_FONT)
+        title_label = ctk.CTkLabel(self, text="", font=HEADER_FONT, text_color=TEXT_HEADER_COLOR)
+        title_label.pack(pady=(0, 30))
+        
+        self.entry_user = ctk.CTkEntry(self, placeholder_text="", height=40, font=BODY_FONT)
         self.entry_user.pack(pady=10, padx=40, fill="x")
 
-        self.entry_pass = ctk.CTkEntry(self, placeholder_text=self.controller.loc.get("password"), show="*", height=40, font=BODY_FONT)
+        self.entry_pass = ctk.CTkEntry(self, placeholder_text="", show="*", height=40, font=BODY_FONT)
         self.entry_pass.pack(pady=10, padx=40, fill="x")
         
-        ctk.CTkButton(self, text=self.controller.loc.get("login"), font=BUTTON_FONT, height=45, fg_color=ACCENT_COLOR, hover_color="#0069D9",
-                      command=self.on_login).pack(pady=(20, 10), padx=40, fill="x")
+        login_btn = ctk.CTkButton(self, text="", font=BUTTON_FONT, height=45, fg_color=ACCENT_COLOR, hover_color="#0069D9",
+                                 command=self.on_login)
+        login_btn.pack(pady=(20, 10), padx=40, fill="x")
 
-        ctk.CTkButton(self, text=self.controller.loc.get("no_account"), font=BODY_FONT, fg_color="transparent", hover_color=CARD_BG_COLOR,
-                      command=self.controller.open_register_window).pack(pady=5)
+        register_btn = ctk.CTkButton(self, text="", font=BODY_FONT, fg_color="transparent", hover_color=CARD_BG_COLOR,
+                                    command=self.controller.open_register_window)
+        register_btn.pack(pady=5)
 
-        ctk.CTkButton(self, text=self.controller.loc.get("server_settings"), font=("Helvetica Neue", 10), fg_color="transparent", text_color=TEXT_BODY_COLOR,
-                      command=self.controller.open_server_menu).pack(side="bottom", pady=10)
+        server_btn = ctk.CTkButton(self, text="", font=("Helvetica Neue", 10), fg_color="transparent", text_color=TEXT_BODY_COLOR,
+                                  command=self.controller.open_server_menu)
+        server_btn.pack(side="bottom", pady=10)
+        
+        self.update_texts()
 
     def on_login(self):
         self.controller.on_login(self.entry_user.get().strip(), self.entry_pass.get().strip())
         
     def update_texts(self):
         self.title(self.controller.loc.get("login_title"))
+        for widget in self.winfo_children():
+            if isinstance(widget, ctk.CTkLabel) and widget.cget("font") == HEADER_FONT:
+                widget.configure(text=self.controller.loc.get("login_title"))
+            elif isinstance(widget, ctk.CTkButton):
+                if widget.cget("text") == self.controller.loc.get("login"):
+                    widget.configure(text=self.controller.loc.get("login"))
+                elif widget.cget("text") == self.controller.loc.get("no_account"):
+                    widget.configure(text=self.controller.loc.get("no_account"))
+                elif "server_settings" in widget.cget("text"):
+                    widget.configure(text=self.controller.loc.get("server_settings"))
+        
         self.entry_user.configure(placeholder_text=self.controller.loc.get("username"))
         self.entry_pass.configure(placeholder_text=self.controller.loc.get("password"))
 
@@ -982,40 +1039,49 @@ class RegisterWindow(ctk.CTkToplevel):
         self.grab_set()
         self.configure(fg_color=ctk.ThemeManager.theme["CTk"]["fg_color"][1])
         
+        self.e_user = None
+        self.e_pass = None
+        self.e_phone = None
+        self.e_dob = None
+        
         self._create_widgets()
         
     def _create_widgets(self):
-        ctk.CTkLabel(self, text=self.controller.loc.get("register_title"), font=HEADER_FONT, text_color=TEXT_HEADER_COLOR).pack(pady=(40, 30))
+        title_label = ctk.CTkLabel(self, text="", font=HEADER_FONT, text_color=TEXT_HEADER_COLOR)
+        title_label.pack(pady=(40, 30))
         
-        self.e_user = ctk.CTkEntry(self, placeholder_text=self.controller.loc.get("username"), height=40, font=BODY_FONT)
+        self.e_user = ctk.CTkEntry(self, placeholder_text="", height=40, font=BODY_FONT)
         self.e_user.pack(pady=5, padx=40, fill="x")
         
-        self.e_pass = ctk.CTkEntry(self, placeholder_text=self.controller.loc.get("password"), show="*", height=40, font=BODY_FONT)
+        self.e_pass = ctk.CTkEntry(self, placeholder_text="", show="*", height=40, font=BODY_FONT)
         self.e_pass.pack(pady=5, padx=40, fill="x")
         
-        self.e_phone = ctk.CTkEntry(self, placeholder_text=self.controller.loc.get("phone_placeholder"), height=40, font=BODY_FONT)
+        self.e_phone = ctk.CTkEntry(self, placeholder_text="", height=40, font=BODY_FONT)
         self.e_phone.pack(pady=5, padx=40, fill="x")
         
-        self.e_dob = ctk.CTkEntry(self, placeholder_text=self.controller.loc.get("dob_placeholder"), height=40, font=BODY_FONT)
+        self.e_dob = ctk.CTkEntry(self, placeholder_text="", height=40, font=BODY_FONT)
         self.e_dob.pack(pady=5, padx=40, fill="x")
 
-        ctk.CTkButton(self, text=self.controller.loc.get("register_button"), font=BUTTON_FONT, height=45, fg_color=HIGHLIGHT_COLOR, hover_color="#E08500",
-                      command=self.on_register).pack(pady=(30, 20), padx=40, fill="x")
+        register_btn = ctk.CTkButton(self, text="", font=BUTTON_FONT, height=45, fg_color=HIGHLIGHT_COLOR, hover_color="#E08500",
+                                    command=self.on_register)
+        register_btn.pack(pady=(30, 20), padx=40, fill="x")
+
+        self.update_texts()
 
     def on_register(self):
         u, p = self.e_user.get().strip(), self.e_pass.get().strip()
         ph, dob = self.e_phone.get().strip(), self.e_dob.get().strip()
         
         if not u or not p or not ph or not dob:
-             messagebox.showwarning("Ошибка", self.controller.loc.get("fill_all_fields"))
+             messagebox.showwarning(self.controller.loc.get("error"), self.controller.loc.get("fill_all_fields"))
              return
 
         if not Validator.is_valid_phone_by(ph):
-            messagebox.showerror("Ошибка", self.controller.loc.get("invalid_phone"))
+            messagebox.showerror(self.controller.loc.get("error"), self.controller.loc.get("invalid_phone"))
             return
         valid_date, msg = Validator.is_valid_date(dob)
         if not valid_date:
-            messagebox.showerror("Ошибка", msg)
+            messagebox.showerror(self.controller.loc.get("error"), msg)
             return
 
         if self.controller.on_register(u, p, ph, dob):
@@ -1023,6 +1089,13 @@ class RegisterWindow(ctk.CTkToplevel):
             
     def update_texts(self):
         self.title(self.controller.loc.get("register_title"))
+        for widget in self.winfo_children():
+            if isinstance(widget, ctk.CTkLabel) and widget.cget("font") == HEADER_FONT:
+                widget.configure(text=self.controller.loc.get("register_title"))
+            elif isinstance(widget, ctk.CTkButton):
+                if widget.cget("text") == self.controller.loc.get("register_button"):
+                    widget.configure(text=self.controller.loc.get("register_button"))
+        
         self.e_user.configure(placeholder_text=self.controller.loc.get("username"))
         self.e_pass.configure(placeholder_text=self.controller.loc.get("password"))
         self.e_phone.configure(placeholder_text=self.controller.loc.get("phone_placeholder"))
@@ -1037,17 +1110,31 @@ class ServerMenuWindow(ctk.CTkToplevel):
         self.transient(master)
         self.configure(fg_color=CARD_BG_COLOR)
         
+        self.btn_stop_server = None
         self._create_widgets()
         
     def _create_widgets(self):
-        ctk.CTkLabel(self, text=self.controller.loc.get("manage_server"), font=SUBHEADER_FONT).pack(pady=20)
+        title_label = ctk.CTkLabel(self, text="", font=SUBHEADER_FONT)
+        title_label.pack(pady=20)
 
-        ctk.CTkButton(self, text=self.controller.loc.get("start_server"), font=BUTTON_FONT, fg_color=ACCENT_COLOR,
-                      command=self.controller.on_start_server).pack(pady=10, padx=20, fill="x")
+        start_btn = ctk.CTkButton(self, text="", font=BUTTON_FONT, fg_color=ACCENT_COLOR,
+                                 command=self.controller.on_start_server)
+        start_btn.pack(pady=10, padx=20, fill="x")
         
-        self.btn_stop_server = ctk.CTkButton(self, text=self.controller.loc.get("stop_server"), font=BUTTON_FONT, fg_color=HIGHLIGHT_COLOR, hover_color="#E08500",
-                                             command=self.controller.on_stop, state="disabled" if not self.controller.server_running else "normal")
+        self.btn_stop_server = ctk.CTkButton(self, text="", font=BUTTON_FONT, fg_color=HIGHLIGHT_COLOR, hover_color="#E08500",
+                                            command=self.controller.on_stop, 
+                                            state="disabled" if not self.controller.server_running else "normal")
         self.btn_stop_server.pack(pady=5, padx=20, fill="x")
+        
+        self.update_texts()
         
     def update_texts(self):
         self.title(self.controller.loc.get("server_settings"))
+        for widget in self.winfo_children():
+            if isinstance(widget, ctk.CTkLabel):
+                widget.configure(text=self.controller.loc.get("manage_server"))
+            elif isinstance(widget, ctk.CTkButton):
+                if "start_server" in widget.cget("text") or widget.cget("text") == "":
+                    widget.configure(text=self.controller.loc.get("start_server"))
+                elif "stop_server" in widget.cget("text") or widget == self.btn_stop_server:
+                    widget.configure(text=self.controller.loc.get("stop_server"))
