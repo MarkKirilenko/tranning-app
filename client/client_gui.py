@@ -97,93 +97,19 @@ class AppController(ctk.CTk):
         self.auth_window = AuthWindow(self, self)
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
-    # ... (остальные методы остаются такими же)
-
-    def set_nutrition_goal(self, goal):
-        """Устанавливает цель питания и загружает план."""
-        self.client.send({
-            "action": "get_nutrition_plan",
-            "goal": goal,
-            "username": self.username
-        })
-        
-    def save_training_plan_with_history(self, plan_name, level, goal, condition, exercises):
-        """Сохраняет план тренировки и добавляет в историю."""
-        if self.username:
-            # Сохраняем план тренировки
-            self.client.send({
-                "action": "save_plan",
-                "username": self.username,
-                "plan_name": plan_name,
-                "level": level,
-                "goal": goal,
-                "condition": condition,
-                "exercises": exercises
-            })
-            
-            # Также сохраняем как выполненную тренировку в историю
-            workout_name = f"Сохраненный план: {plan_name}"
-            self.save_workout_history(workout_name, exercises, 0)  # Длительность 0 для сохраненных планов
-    
-    def finish_workout_and_save(self, workout_name, exercises, duration, save_as_plan=False):
-        """Завершает тренировку и сохраняет при необходимости."""
-        # Сохраняем в историю тренировок
-        self.save_workout_history(workout_name, exercises, duration)
-        
-        # Если нужно сохранить как план
-        if save_as_plan and hasattr(self, 'wizard_selections'):
-            level = self.wizard_selections.get("level", "Новичок")
-            goal = self.wizard_selections.get("goal", "Похудение")
-            condition = self.wizard_selections.get("condition", "Дом")
-            plan_name = f"План: {workout_name}"
-            
-            self.save_training_plan_with_history(plan_name, level, goal, condition, exercises)
-    """Главный контроллер приложения."""
-    def __init__(self):
-        super().__init__()
-        self.loc = LocalizationManager()
-        ctk.set_appearance_mode("Dark")
-        ctk.set_default_color_theme("blue")
-        
-        self.title(f"Fitness App - Create Your Perfect Workout [{self.loc.current_lang.upper()}]")
-        self.geometry("800x700")
-        self.minsize(700, 600)
-        
-        # Состояние
-        self.stop_event = threading.Event()
-        self.server_thread = None
-        self.server_running = False
-        self.client = Client()
-        self.authenticated = False
-        self.username = None
-        
-        # Состояние Мастера
-        self.wizard_selections = {
-            "condition": None,
-            "goal": None,
-            "level": None
-        }
-        
-        self.current_exercises = []
-        self.logger = LoggerObserver()
-        self.frames = {}
-        self.current_frame = None
-
-        self.withdraw()
-        self.auth_window = AuthWindow(self, self)
-        self.protocol("WM_DELETE_WINDOW", self.on_close)
-
     def log(self, message):
         print(f"[SYSTEM] {message}")
         self.logger.notify(message)
 
     def toggle_language(self):
-        """Переключает язык приложения."""
+        """Переключает язык приложения и обновляет все элементы интерфейса."""
         new_lang = 'en' if self.loc.current_lang == 'ru' else 'ru'
         self.loc.set_language(new_lang)
         
+        # Обновляем заголовок главного окна
         self.title(f"Fitness App - Create Your Perfect Workout [{new_lang.upper()}]")
         
+        # Обновляем текущий фрейм
         if self.current_frame:
             frame_class = type(self.current_frame)
             frame_key = None
@@ -194,15 +120,28 @@ class AppController(ctk.CTk):
                     break
             
             if frame_key:
+                # Удаляем старый фрейм и создаем новый с обновленными текстами
                 self.frames.pop(frame_key)
-                self.frames[frame_key] = frame_class(self, self)
+                if frame_key == "nutrition_plan" and hasattr(self, '_nutrition_plan_data'):
+                    self.frames[frame_key] = frame_class(self, self, plan_data=self._nutrition_plan_data)
+                else:
+                    self.frames[frame_key] = frame_class(self, self)
                 self.show_frame(frame_class, frame_key)
         
+        # Обновляем все остальные фреймы
+        for key, frame in list(self.frames.items()):
+            if frame != self.current_frame and hasattr(frame, 'update_texts'):
+                frame.update_texts()
+        
+        # Обновляем модальные окна
         if hasattr(self, 'auth_window') and self.auth_window.winfo_exists():
             self.auth_window.update_texts()
         
         if hasattr(self, 'register_window') and self.register_window.winfo_exists():
             self.register_window.update_texts()
+        
+        if hasattr(self, 'server_menu') and self.server_menu.winfo_exists():
+            self.server_menu.update_texts()
 
     # --- Новые методы ---
     
@@ -218,7 +157,8 @@ class AppController(ctk.CTk):
         """Устанавливает цель питания и загружает план."""
         self.client.send({
             "action": "get_nutrition_plan",
-            "goal": goal
+            "goal": goal,
+            "username": self.username
         })
         
     def load_existing_plan(self, plan_id):
@@ -272,8 +212,9 @@ class AppController(ctk.CTk):
         
         key = frame_key if frame_key else frame_class.__name__
         
-        if key not in self.frames or key in ["existing_plans", "workout_history", "nutrition_plan"]:
+        if key not in self.frames:
             if frame_class == NutritionPlanFrame:
+                self._nutrition_plan_data = kwargs.get('plan_data')
                 self.frames[key] = frame_class(self, self, **kwargs)
             else:
                 self.frames[key] = frame_class(self, self)
@@ -350,14 +291,14 @@ class AppController(ctk.CTk):
 
     def on_login(self, username, password):
         if not self.client.connect():
-            messagebox.showerror("Ошибка", "Не удалось подключиться к серверу.")
+            messagebox.showerror("Ошибка", self.loc.get("connection_error"))
             return
         self.client.send({"action": "login", "username": username, "password": password})
         threading.Thread(target=self.reader_loop, daemon=True).start()
 
     def on_register(self, username, password, phone, dob):
         if not self.client.connect():
-            messagebox.showerror("Ошибка", "Не удалось подключиться к серверу.")
+            messagebox.showerror("Ошибка", self.loc.get("connection_error"))
             return False
         self.client.send({
             "action": "register", "username": username, "password": password,
@@ -402,15 +343,15 @@ class AppController(ctk.CTk):
                 self.deiconify()
                 self.show_frame(LandingFrame, "landing")
             else:
-                messagebox.showerror("Ошибка входа", response.get("message", "Неверные данные"))
+                messagebox.showerror(self.loc.get("login_error"), response.get("message", self.loc.get("invalid_credentials")))
                 
         elif action == "register":
             if response["success"]:
-                messagebox.showinfo("Успех", "Регистрация успешна! Теперь выполните вход.")
+                messagebox.showinfo(self.loc.get("success"), self.loc.get("registration_success"))
                 if hasattr(self, 'register_window') and self.register_window.winfo_exists():
                     self.register_window.destroy()
             else:
-                messagebox.showerror("Ошибка регистрации", response.get("message", "Error"))
+                messagebox.showerror(self.loc.get("registration_error"), response.get("message", "Error"))
                 
         elif action == "exercises":
             self.current_exercises = response.get("exercises", [])
@@ -431,7 +372,7 @@ class AppController(ctk.CTk):
                 plan_data = response.get("plan")
                 self.show_frame(NutritionPlanFrame, "nutrition_plan", plan_data=plan_data)
             else:
-                messagebox.showerror("Ошибка", response.get("message", "Не удалось загрузить план питания"))
+                messagebox.showerror(self.loc.get("error"), response.get("message", self.loc.get("nutrition_plan_error")))
                 
         elif action == "existing_plan_loaded":
             if response["success"]:
@@ -439,19 +380,19 @@ class AppController(ctk.CTk):
                 self.current_exercises = plan.get("exercises", [])
                 self.show_frame(ExerciseFrame, "exercise")
             else:
-                messagebox.showerror("Ошибка", response.get("message", "Не удалось загрузить план"))
+                messagebox.showerror(self.loc.get("error"), response.get("message", self.loc.get("load_plan_error")))
                 
         elif action == "workout_history_saved":
             if response["success"]:
-                print("История тренировки сохранена")
+                print(self.loc.get("workout_history_saved"))
             else:
-                messagebox.showerror("Ошибка", "Не удалось сохранить историю тренировки")
+                messagebox.showerror(self.loc.get("error"), self.loc.get("save_history_error"))
                 
         elif action == "plan_saved":
             if response["success"]:
-                print("План тренировки сохранен")
+                print(self.loc.get("plan_saved"))
             else:
-                messagebox.showerror("Ошибка", "Не удалось сохранить план тренировки")
+                messagebox.showerror(self.loc.get("error"), self.loc.get("save_plan_error"))
 
     # --- Обработчики событий UI ---
 
@@ -487,7 +428,6 @@ class AppController(ctk.CTk):
         sys.exit(0)
     
     def save_training_plan_with_history(self, plan_name, level, goal, condition, exercises):
-    
         if self.username:
             self.client.send({
                 "action": "save_plan_with_history",
