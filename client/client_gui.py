@@ -17,7 +17,7 @@ from localization import LocalizationManager
 
 # --- ЗАГЛУШКИ ДЛЯ СЕРВЕРА ---
 try:
-    from server import run_server, HOST, PORT, LoggerObserver
+    from server.server import run_server, HOST, PORT, LoggerObserver
 except ImportError:
     HOST, PORT = "127.0.0.1", 65432
     def run_server(stop_event, logger_func): pass
